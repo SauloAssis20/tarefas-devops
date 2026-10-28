@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{APP_NAME}}</title>
+  <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+  <main class="card">
+    <h1>{{APP_NAME}}</h1>
+
+    <form id="form">
+      <input id="input" type="text" placeholder="Nova tarefa..." autocomplete="off">
+      <button type="submit">Adicionar</button>
+    </form>
+    <p id="error" class="error" role="alert"></p>
+
+    <ul id="list"></ul>
+    <p id="counter" class="counter"></p>
+  </main>
+
+  <script src="src/tasks.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>

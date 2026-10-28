@@ -1,0 +1,88 @@
+name: Pipeline - Tarefas DevOps
+
+on:
+  push:
+    branches: [main, develop, 'feature/**', 'release/**', 'hotfix/**']
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+# Variável da pipeline (Aula 07 - "Adicionando variáveis").
+# Para mudar sem editar o código: Settings > Secrets and variables > Actions > Variables > APP_NAME
+env:
+  APP_NAME: ${{ vars.APP_NAME || 'Lista de Tarefas DevOps' }}
+  NODE_VERSION: '22'
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------- STAGE 1: BUILD ----------
+  build:
+    name: 1 - Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v7
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Gerar o build (dist/)
+        run: npm run build
+
+      - name: Registrar no resumo da execução
+        run: echo "### Build concluído para **$APP_NAME** (branch ${{ github.ref_name }})" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar o artefato do build
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  # ---------- STAGE 2: TESTES (2 jobs em paralelo e independentes) ----------
+  testes-unitarios:
+    name: 2a - Testes unitários (Jest)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Instalar dependências
+        run: npm install --no-audit --no-fund
+      - name: Executar testes
+        run: npm test
+
+  seguranca:
+    name: 2b - Segurança (npm audit)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Gerar lockfile temporário
+        run: npm install --package-lock-only --no-audit --no-fund
+      - name: Procurar vulnerabilidades críticas
+        run: npm audit --audit-level=critical
+
+  # ---------- STAGE 3: DEPLOY (só na main, só se TUDO acima passou) ----------
+  deploy:
+    name: 3 - Deploy (GitHub Pages)
+    needs: [testes-unitarios, seguranca]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

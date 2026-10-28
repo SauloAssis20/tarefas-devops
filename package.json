@@ -1,0 +1,19 @@
+{
+  "name": "tarefas-devops",
+  "version": "1.0.0",
+  "description": "Lista de tarefas simples para praticar Gitflow e CI/CD com GitHub Actions",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "jest"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "jest": "^30.0.0"
+  },
+  "jest": {
+    "testPathIgnorePatterns": ["/node_modules/", "/dist/"]
+  }
+}
