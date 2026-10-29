@@ -1,4 +1,4 @@
-const { addTask, toggleTask, removeTask, countPending } = require('../src/tasks');
+const { addTask, toggleTask, removeTask, countPending, clearCompleted } = require('../src/tasks');
 
 describe('addTask', () => {
   test('adiciona uma tarefa nova e pendente', () => {
@@ -64,5 +64,15 @@ describe('countPending', () => {
 
   test('retorna 0 para lista vazia', () => {
     expect(countPending([])).toBe(0);
+  });
+});
+
+describe('clearCompleted', () => {
+  test('remove apenas as tarefas concluídas', () => {
+    const list = [
+      { id: 1, text: 'a', done: true },
+      { id: 2, text: 'b', done: false },
+    ];
+    expect(clearCompleted(list)).toEqual([{ id: 2, text: 'b', done: false }]);
   });
 });
