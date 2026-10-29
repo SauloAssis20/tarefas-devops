@@ -56,5 +56,10 @@
     render();
   });
 
+  document.getElementById('clear').addEventListener('click', () => {
+    tasks = Tasks.clearCompleted(tasks);
+    render();
+  });
+  
   render();
 })();

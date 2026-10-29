@@ -28,5 +28,8 @@
     return list.filter((t) => !t.done).length;
   }
 
-  return { addTask, toggleTask, removeTask, countPending };
+  function clearCompleted(list) {
+    return list.filter((t) => !t.done);
+  }
+  return { addTask, toggleTask, removeTask, countPending, clearCompleted };
 });
