@@ -86,3 +86,86 @@ jobs:
       - name: Publicar no GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+  sast:
+    name: SAST - Analise estatica
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+
+      - name: Executar Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/javascript
+            p/secrets
+            
+  dast:
+    name: DAST - Teste dinamico e Container
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar o codigo
+        uses: actions/checkout@v7
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Configurar Docker
+        run: docker --version
+
+      - name: Gerar build da aplicacao
+        run: |
+          npm run build
+
+      - name: Construir imagem Docker
+        run: |
+          docker build -t tarefas-devops:test .
+
+      - name: Verificar vulnerabilidades do container com Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: tarefas-devops:test
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+
+      - name: Iniciar container
+        run: |
+          docker run -d \
+            --name tarefas-devops \
+            -p 8080:80 \
+            tarefas-devops:test
+
+      - name: Validar funcionamento da aplicacao
+        run: |
+          for i in {1..20}; do
+            if curl -fsS http://localhost:8080/; then
+              echo "Aplicacao funcionando!"
+              exit 0
+            fi
+            sleep 3
+          done
+
+          echo "Erro: aplicacao nao iniciou!"
+          docker logs tarefas-devops
+          exit 1
+
+      - name: Executar teste DAST com OWASP ZAP
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: http://localhost:8080
+          fail_action: true
+          allow_issue_writing: false
+
+      - name: Encerrar container
+        if: always()
+        run: docker rm -f tarefas-devops || true
