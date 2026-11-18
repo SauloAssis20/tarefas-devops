@@ -70,23 +70,6 @@ jobs:
       - name: Procurar vulnerabilidades críticas
         run: npm audit --audit-level=critical
 
-  # ---------- STAGE 3: DEPLOY (só na main, só se TUDO acima passou) ----------
-  deploy:
-    name: 3 - Deploy (GitHub Pages)
-    needs: [testes-unitarios, seguranca]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Publicar no GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
-
   sast:
     name: SAST - Analise estatica
     needs: build
@@ -94,15 +77,18 @@ jobs:
 
     steps:
       - name: Baixar codigo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Executar Semgrep
-        uses: semgrep/semgrep-action@v1
-        with:
-          config: >-
-            p/javascript
-            p/secrets
-            
+        run: |
+          docker run --rm \
+            -v "$PWD:/src" \
+            semgrep/semgrep \
+            semgrep scan \
+              --config p/javascript \
+              --config p/secrets \
+              --error \
+              /src
   dast:
     name: DAST - Teste dinamico e Container
     needs: build
@@ -169,3 +155,20 @@ jobs:
       - name: Encerrar container
         if: always()
         run: docker rm -f tarefas-devops || true
+        
+  # ---------- STAGE 3: DEPLOY (só na main, só se TUDO acima passou) ----------
+  deploy:
+    name: 3 - Deploy (GitHub Pages)
+    needs: [testes-unitarios, seguranca, sast, dast]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5           
