@@ -1,0 +1,3 @@
+function testarSAST(usuario) {
+    document.getElementById("mensagem").innerHTML = usuario;
+}
