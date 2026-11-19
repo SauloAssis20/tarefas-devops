@@ -1,0 +1,7 @@
+rules:
+  - id: javascript-dangerous-innerhtml
+    languages:
+      - javascript
+    severity: ERROR
+    message: "Possivel vulnerabilidade XSS: uso de innerHTML."
+    pattern: $ELEMENT.innerHTML = $VALUE
